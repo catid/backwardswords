@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Backwards Replication Game</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  </head>
+  <body>
+    <div id="join-screen" class="screen">
+      <h1>Backwards Replication Game</h1>
+      <form id="join-form">
+        <label>Game Code <input name="code" placeholder="e.g., PARTY" required /></label>
+        <label>Your Name <input name="name" placeholder="e.g., Alex" required /></label>
+        <div class="avatar-picker">
+          <label>Select Your Avatar</label>
+          <div class="avatar-grid">
+            <label class="avatar-option"><input type="radio" name="avatar" value="🦊" checked><span class="chip">🦊</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🐱"><span class="chip">🐱</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🐶"><span class="chip">🐶</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🐼"><span class="chip">🐼</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🐸"><span class="chip">🐸</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🐵"><span class="chip">🐵</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🦁"><span class="chip">🦁</span></label>
+            <label class="avatar-option"><input type="radio" name="avatar" value="🐨"><span class="chip">🐨</span></label>
+          </div>
+        </div>
+        <button type="submit">Join</button>
+      </form>
+      <p class="hint">Share the game code with everyone. When at least two players joined, the game starts.</p>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+      <div class="topbar">
+        <div>Game: <span id="game-code"></span></div>
+        <div>Player: <span id="player-avatar" class="avatar"></span> <span id="player-name"></span></div>
+        <div>Phase: <span id="phase"></span></div>
+      </div>
+
+      <div class="players">
+        <h3>Players</h3>
+        <ul id="players-list"></ul>
+      </div>
+
+      <div id="panel-lead" class="panel hidden">
+        <h2>You are the lead. Record a clip (max 5 seconds).</h2>
+        <div class="recorder">
+          <button id="lead-rec-btn" class="btn-record">Start Recording</button>
+          <button id="lead-stop-btn" class="btn-stop" disabled>Stop</button>
+          <div class="audio-row">
+          <audio id="lead-play" class="audio-large" controls playsinline preload="metadata">
+            <source id="lead-play-src" />
+          </audio>
+          </div>
+          <button id="lead-upload-btn" class="btn-submit" disabled>Submit Clip</button>
+        </div>
+        <p>Everyone will try to replicate your clip played backwards.</p>
+      </div>
+
+      <div id="panel-wait-lead" class="panel hidden">
+        <h2>Waiting for the lead to submit the clip...</h2>
+        <div class="lead-controls">
+          <p>Once the clip is ready, you'll be able to play it forward and backwards.</p>
+        </div>
+      </div>
+
+      <div id="panel-replicate" class="panel hidden">
+        <h2>Replicate the backwards clip</h2>
+        <div class="group" id="lead-clip-group">
+          <h3>Leader’s Clip</h3>
+          <div class="clip-controls">
+            <button id="play-forward" class="btn-forward">Play Forward</button>
+            <button id="play-backward" class="btn-reverse">Play Backward</button>
+          </div>
+          <div class="audio-row">
+            <audio id="lead-clip-player" class="audio-large" controls playsinline preload="metadata"></audio>
+          </div>
+        </div>
+        <div class="group" id="your-rec-group">
+          <h3>Your Recording</h3>
+          <div class="recorder">
+            <button id="rep-rec-btn" class="btn-record">Start Recording</button>
+            <button id="rep-stop-btn" class="btn-stop" disabled>Stop</button>
+            <div class="audio-row">
+            <audio id="rep-play" class="audio-large" controls playsinline preload="metadata">
+              <source id="rep-play-src" />
+            </audio>
+            </div>
+            <button id="rep-upload-btn" class="btn-submit" disabled>Submit Replication</button>
+          </div>
+        </div>
+        <p class="hint">No time limit. You can re-record; your last submission before voting starts will be counted. The round advances when everyone has submitted.</p>
+      </div>
+
+      <div id="panel-vote" class="panel hidden">
+        <h2>Crown the best</h2>
+        <p id="vote-waiting" class="hint hidden">Waiting for other players to finish submitting. Voting will open automatically.</p>
+        <div id="vote-list"></div>
+        <div class="votes">
+          <button id="submit-votes" class="btn-submit">Submit Votes</button>
+          <button id="skip-vote" class="btn-skip" title="Skip voting and abstain">Skip Voting</button>
+        </div>
+        <p class="hint">Tap the crown on the best clip. You may abstain via Skip Voting.</p>
+      </div>
+
+      <div id="panel-wait-voting" class="panel hidden">
+        <h2>Waiting for all players to vote…</h2>
+        <p class="hint">You’ve submitted your crown. We’ll proceed once everyone has voted.</p>
+      </div>
+
+      <div id="panel-scoreboard" class="panel hidden">
+        <h2>Scoreboard</h2>
+        <div id="podium" class="podium"></div>
+        <div id="scores-grid" class="scores-grid"></div>
+        <button id="next-round-btn" class="btn-forward">Start Next Round</button>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+  </html>

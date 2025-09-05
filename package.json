@@ -1,0 +1,20 @@
+{
+  "name": "reverse-replication-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backwards Replication Party Game - mobile friendly web app",
+  "scripts": {
+    "start": "node server.js",
+    "start:https": "HTTPS_PORT=8443 PORT=8000 node server.js"
+  },
+  "dependencies": {
+    "selfsigned": "^2.4.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "selfsigned": "^2.4.1",
+    "node-wav": "^0.0.2"
+  }
+}
