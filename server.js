@@ -15,6 +15,13 @@ const crypto = require('crypto').webcrypto;
 
 function now() { return Date.now() / 1000; }
 
+function sanitizeToken(str) {
+  let s = String(str || '');
+  s = s.replace(/\s+/g, '_');
+  s = s.replace(/[^A-Za-z0-9_]/g, '');
+  return s.toUpperCase();
+}
+
 class Player {
   constructor(id, name, avatar=null) { this.id = id; this.name = name; this.avatar = avatar; this.connected = false; }
 }
@@ -227,8 +234,8 @@ async function reverseWav(inputPath, outputPath) {
 
   if (pathname === '/join' && req.method === 'POST') {
     const body = await parseJSON(req);
-    const code = String(body.code || '').toUpperCase();
-    const name = String(body.name || '').trim().toUpperCase();
+    const code = sanitizeToken(body.code);
+    const name = sanitizeToken(body.name);
     const avatar = String(body.avatar || '').trim().slice(0, 4); // emoji or short token
     const game = getGame(code);
     let pid = null;
@@ -243,7 +250,7 @@ async function reverseWav(inputPath, outputPath) {
   }
 
   if (pathname === '/sse' && req.method === 'GET') {
-    const code = String(query.code || '').toUpperCase();
+    const code = sanitizeToken(query.code);
     const playerId = String(query.playerId || '');
     const game = getGame(code);
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
@@ -285,7 +292,7 @@ async function reverseWav(inputPath, outputPath) {
   }
 
   if (pathname === '/upload/lead' && req.method === 'POST') {
-    const code = String(query.code || '').toUpperCase();
+    const code = sanitizeToken(query.code);
     const playerId = String(query.playerId || '');
     const game = getGame(code);
     const r = game.current_round;
@@ -315,7 +322,7 @@ async function reverseWav(inputPath, outputPath) {
   }
 
   if (pathname === '/upload/replicate' && req.method === 'POST') {
-    const code = String(query.code || '').toUpperCase();
+    const code = sanitizeToken(query.code);
     const playerId = String(query.playerId || '');
     const game = getGame(code);
     const r = game.current_round;
@@ -351,7 +358,7 @@ async function reverseWav(inputPath, outputPath) {
 
   if (pathname === '/vote' && req.method === 'POST') {
     const body = await parseJSON(req);
-    const code = String(body.code || '').toUpperCase();
+    const code = sanitizeToken(body.code);
     const game = getGame(code);
     const r = game.current_round;
     if (!r || r.state !== 'voting') { res.statusCode = 400; return res.end('Not voting'); }
@@ -379,7 +386,7 @@ async function reverseWav(inputPath, outputPath) {
 
   if (pathname === '/control/start_next_round' && req.method === 'POST') {
     const body = await parseJSON(req);
-    const code = String(body.code || '').toUpperCase();
+    const code = sanitizeToken(body.code);
     const game = getGame(code);
     const r = game.current_round;
     if (!r || r.state !== 'scoreboard') { res.statusCode = 400; return res.end('Not at end'); }
@@ -396,7 +403,7 @@ async function reverseWav(inputPath, outputPath) {
   }
 
   if (pathname === '/state' && req.method === 'GET') {
-    const code = String(query.code || '').toUpperCase();
+    const code = sanitizeToken(query.code);
     const playerId = String(query.playerId || '');
     const game = getGame(code);
     res.setHeader('Content-Type', 'application/json');

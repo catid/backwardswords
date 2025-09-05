@@ -11,6 +11,7 @@ body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; backgro
 .status { color: #8aa; font-size: 12px; margin-left: 6px; }
 .top-crown { margin-left: 4px; filter: drop-shadow(0 1px 0 rgba(0,0,0,0.35)); }
 .score-chip { margin-left: auto; background: #1a2233; border: 1px solid #29354a; border-radius: 999px; padding: 2px 8px; font-weight: 800; color: #b7c7ff; font-size: 12px; }
+.spectator-chip { margin-left: auto; background: #1a2233; border: 1px dashed #3a4a6a; border-radius: 999px; padding: 2px 8px; font-weight: 800; color: #99b1ff; font-size: 12px; font-style: italic; }
 .panel { margin-top: 20px; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #11161f; }
 /* Buttons: fun, gamey, animated */
 button { position: relative; --h: 44px; min-height: var(--h); line-height: calc(var(--h) - 6px); padding: 0 16px; border: 0; border-radius: 10px; color: #fff; cursor: pointer; margin: 6px; font-weight: 700; letter-spacing: 0.2px; text-shadow: 0 1px 0 rgba(0,0,0,0.25);

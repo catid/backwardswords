@@ -80,14 +80,23 @@ function adjustAudioRows() {
 }
 
 // Build an invite link with the current party code as URL parameter
+function sanitizeTokenLocal(str) {
+  try {
+    let s = String(str || '');
+    s = s.replace(/\s+/g, '_');
+    s = s.replace(/[^A-Za-z0-9_]/g, '');
+    return s.toUpperCase();
+  } catch { return ''; }
+}
+
 function getJoinInputCode() {
   const inp = document.querySelector('input[name="code"]');
   const v = inp ? String(inp.value || '') : '';
-  return v.trim().toUpperCase();
+  return sanitizeTokenLocal(v.trim());
 }
 
 function buildInviteLink(codeOverride) {
-  const code = (codeOverride || getJoinInputCode() || state?.code || my.code || '').toUpperCase();
+  const code = sanitizeTokenLocal(codeOverride || getJoinInputCode() || state?.code || my.code || '');
   const origin = BASE_URL || location.origin;
   const url = `${origin}/?pass=${encodeURIComponent(code)}`;
   return { code, url };
@@ -107,7 +116,7 @@ function updateInviteInput(prefix, codeOverride) {
       await navigator.clipboard.writeText(latest.url);
       // If we're on the join screen, also prefill the password and focus name
       if (prefix === 'join') {
-        const code = (getJoinInputCode() || latest.code || '').toUpperCase();
+        const code = sanitizeTokenLocal(getJoinInputCode() || latest.code || '');
         const codeInp = document.querySelector('input[name="code"]');
         if (codeInp && code) codeInp.value = code;
         const nameInp = document.querySelector('input[name="name"]');
@@ -155,7 +164,7 @@ function render() {
     const li = el('li', { class: 'player-row' });
     const isPart = r ? participants.includes(p.id) : true;
     const av = el('span', { class: 'avatar' + (!isPart && r ? ' avatar-ghost' : '') }, (!isPart && r) ? '👻' : (p.avatar || '🙂'));
-    const nameSpan = el('span', { class: 'player-name' + (!isPart && r ? ' spectator' : '') }, (p.name || '').toUpperCase() + (!isPart && r ? ' (spectator)' : ''));
+    const nameSpan = el('span', { class: 'player-name' + (!isPart && r ? ' spectator' : '') }, (p.name || '').toUpperCase());
     li.appendChild(av);
     li.appendChild(nameSpan);
     // Crown for top scorer(s)
@@ -177,9 +186,13 @@ function render() {
       sts.push(isReady ? 'ready' : 'not ready');
     }
     li.appendChild(el('span', { class: 'status' }, '• ' + sts.join(' • ')));
-    // Score chip
+    // Score chip or spectator marker
     const sc = (typeof scores[p.id] === 'number') ? scores[p.id] : 0;
-    li.appendChild(el('span', { class: 'score-chip', title: 'Score' }, `${sc} pts`));
+    if (r && !isPart) {
+      li.appendChild(el('span', { class: 'spectator-chip', title: 'Spectator' }, '(spectator)'));
+    } else {
+      li.appendChild(el('span', { class: 'score-chip', title: 'Score' }, `${sc} pts`));
+    }
     ul.appendChild(li);
   }
 
@@ -437,8 +450,8 @@ attachButtonFX();
 $('#join-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const fd = new FormData(ev.target);
-  const code = fd.get('code').toString().trim().toUpperCase();
-  const name = fd.get('name').toString().trim().toUpperCase();
+  const code = sanitizeTokenLocal(fd.get('code').toString().trim());
+  const name = sanitizeTokenLocal(fd.get('name').toString().trim());
   const avatar = fd.get('avatar') ? String(fd.get('avatar')) : '';
   const resp = await fetch('/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, name, avatar }) });
   const data = await resp.json();
@@ -458,7 +471,7 @@ $('#join-form').addEventListener('submit', async (ev) => {
     const pass = u.searchParams.get('pass') || u.searchParams.get('code');
     if (pass) {
       const inp = document.querySelector('input[name="code"]');
-      if (inp) inp.value = String(pass).toUpperCase();
+      if (inp) inp.value = sanitizeTokenLocal(pass);
       // Focus the name field so the user can start typing immediately (macOS Chrome friendly)
       setTimeout(() => {
         const nameInp = document.querySelector('input[name="name"]');
@@ -472,12 +485,21 @@ $('#join-form').addEventListener('submit', async (ev) => {
   if (inp) {
     const upd = () => { const up = getJoinInputCode(); updateInviteInput('join', up); };
     ['input','change','keyup','blur'].forEach(ev => inp.addEventListener(ev, upd));
+    // Sanitize live
+    const sanitizeLive = () => { const s = getJoinInputCode(); if (inp.value !== s) inp.value = s; };
+    ['input','change','keyup','blur'].forEach(ev => inp.addEventListener(ev, sanitizeLive));
     // In case autofill populates asynchronously, run a short debounce updater
     setTimeout(upd, 50);
     setTimeout(upd, 300);
     setTimeout(upd, 1000);
     // As a last resort for some Chrome autofill cases, poll briefly
     let tries = 0; const iv = setInterval(() => { upd(); if (++tries > 20) clearInterval(iv); }, 250);
+  }
+  // Sanitize name input live as well
+  const nameInp = document.querySelector('input[name="name"]');
+  if (nameInp) {
+    const fix = () => { const s = sanitizeTokenLocal(nameInp.value); if (nameInp.value !== s) nameInp.value = s; };
+    ['input','change','keyup','blur'].forEach(ev => nameInp.addEventListener(ev, fix));
   }
 })();
 
