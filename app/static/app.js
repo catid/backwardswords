@@ -158,7 +158,14 @@ function render() {
     ul.appendChild(li);
   }
 
-  if (!r) return;
+  if (!r) {
+    // Pre-round lobby: show lobby panel and invite URL
+    $('#phase').textContent = 'Lobby';
+    show('#panel-lobby');
+    updateInviteInput('lobby');
+    adjustAudioRows();
+    return;
+  }
   // Reset crown only when the round index changes (new round)
   if (lastRoundIndex !== r.index) {
     lastRoundIndex = r.index;
@@ -387,10 +394,14 @@ $('#join-form').addEventListener('submit', async (ev) => {
   // Initialize join-screen invite URL with current input
   updateInviteInput('join');
   const inp = document.querySelector('input[name="code"]');
-  if (inp) inp.addEventListener('input', () => {
-    const up = getJoinInputCode();
-    updateInviteInput('join', up);
-  });
+  if (inp) {
+    const upd = () => { const up = getJoinInputCode(); updateInviteInput('join', up); };
+    ['input','change','keyup','blur'].forEach(ev => inp.addEventListener(ev, upd));
+    // In case autofill populates asynchronously, run a short debounce updater
+    setTimeout(upd, 50);
+    setTimeout(upd, 300);
+    setTimeout(upd, 1000);
+  }
 })();
 
 // Lead recording
