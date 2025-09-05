@@ -7,9 +7,6 @@
     "start": "node server.js",
     "start:https": "HTTPS_PORT=8443 PORT=8000 node server.js"
   },
-  "dependencies": {
-    "selfsigned": "^2.4.1"
-  },
   "engines": {
     "node": ">=18"
   },

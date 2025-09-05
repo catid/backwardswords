@@ -482,14 +482,17 @@ async function ensureCert() {
     console.log(`HTTPS on https://0.0.0.0:${HTTPS_PORT}  [cert: ${creds.source}]`);
   });
 
-  // HTTP server: serve normally for localhost, redirect other hosts → HTTPS
+  // HTTP server: serve app directly when behind a reverse proxy (e.g., Cloudflare),
+  // otherwise redirect non-local hosts to HTTPS on the configured port for local/LAN use.
   function isLocalHost(h) { return h === 'localhost' || h === '127.0.0.1' || h === '::1'; }
   const httpServer = http.createServer((req, res) => {
     const hostHeader = req.headers.host || '';
-    const [hostOnly, portPart] = hostHeader.split(':');
-    if (isLocalHost(hostOnly)) {
+    const [hostOnly] = hostHeader.split(':');
+    const behindProxy = !!(req.headers['x-forwarded-proto'] || req.headers['cf-connecting-ip'] || req.headers['x-forwarded-host']);
+    if (behindProxy || isLocalHost(hostOnly)) {
       return route(req, res);
     }
+    // Not behind a proxy: redirect to HTTPS using the configured HTTPS_PORT
     const targetHost = `${hostOnly}:${HTTPS_PORT}`;
     const loc = `https://${targetHost}${req.url}`;
     res.statusCode = 307;
