@@ -1,78 +1,81 @@
-Backwards Replication Game
+Backwards Words (backwardswords.com)
 
 Overview
-- A quick party game where a lead player records a short clip (<= 5s). Everyone else hears it and can play it forward and backward. Players then record their own voices to replicate the backwards version, submit, then vote for their 1st and 2nd favorite replication. Points: 3 for first, 1 for second.
-- Designed to be mobile friendly and accessible from other devices on the same network.
+- A fast party game: one player records a short clip (<= 5s). Everyone listens, plays it forward/backward, records their best backwards imitation, and crowns a winner. Mobile‑friendly and LAN/Internet friendly.
 
-How to run
+Quick Start (local)
 - Requirements: Node.js 18+
-- Install and start:
-  - npm start
-- The server listens on 0.0.0.0:8000 (so other devices can connect). Open in a browser:
-  - http://YOUR_COMPUTER_IP:8000
+- Install and run: `npm ci && npm start`
+- Open: http://localhost:8000
 
-Joining a game
-- Enter a game code (e.g., PARTY) and your name.
-- Share the code; once at least two players join, the game starts.
+Production Hosting on a Remote Server
 
-Device permissions
-- The app needs microphone access for recording.
-- On iOS Safari, you may have to tap once to enable audio playback (due to autoplay policies).
+Server prep
+- Install Node.js 18+ and Git.
+- Clone the repo: `git clone https://github.com/<you>/<repo>.git && cd repo`
+- Install: `npm ci`
+- Copy env: `cp .env.example .env` and adjust ports if needed (`PORT=8000`, `HTTPS_PORT=8443`).
 
-Game flow and states
-The game operates in rounds. Each round flows through the following states. All steps have a 30-second deadline, but can advance faster if everyone finishes early.
+Run the app (systemd)
+- Create `/etc/systemd/system/backwardswords.service`:
+  - [Unit]
+    Description=Backwards Words
+    After=network.target
+  - [Service]
+    WorkingDirectory=/opt/backwardswords
+    ExecStart=/usr/bin/node server.js
+    Restart=always
+    Environment=PORT=8000
+    Environment=HTTPS_PORT=8443
+  - [Install]
+    WantedBy=multi-user.target
+- Enable/start: `sudo systemctl daemon-reload && sudo systemctl enable --now backwardswords`.
 
-1) lead_record
-   - One player is the lead. They record a clip (max 5s) and submit it.
-   - If they don’t submit within 30s, the round advances anyway.
+Cloudflare SSL/TLS (recommended)
+- Goal: Use Cloudflare for public HTTPS at https://backwardswords.com while the origin app runs on your server.
 
-2) replicate
-   - Everyone else can play the lead’s clip forward and backward.
-   - Each player records their replication (max 5s). They can re-record as many times as they want; the last recording before the deadline is the one that will be submitted automatically if they don’t press submit.
-   - The player list shows “working/submitted” status for each player.
-   - As soon as all non-lead players submit, the game advances to voting immediately (no need to wait the full 30s).
+DNS
+- In Cloudflare → DNS:
+  - Add an A record `@` pointing to your server’s public IP. Proxied (orange cloud) ON.
+  - Optionally add `www` CNAME → `backwardswords.com` (proxied ON) and set a redirect for `www` → root.
 
-3) voting
-   - Each player hears all submitted replications in a random order with anonymous labels (Clip #1, #2, ...). They vote for their first and second favorite.
-   - When everyone votes, the game tallies and moves to the scoreboard without waiting further (otherwise it auto-advances after 30s).
+SSL/TLS mode
+- Preferred: Full (strict). Generate an “Origin Certificate” in Cloudflare → SSL/TLS → Origin Server.
+  - Download the certificate and private key to your server (e.g., `/etc/ssl/cloudflare/origin.crt` and `/etc/ssl/cloudflare/origin.key`).
+  - In `.env`, set:
+    - `SSL_CERT_FILE=/etc/ssl/cloudflare/origin.crt`
+    - `SSL_KEY_FILE=/etc/ssl/cloudflare/origin.key`
+  - Restart the service. The app will terminate HTTPS itself on `HTTPS_PORT` (default 8443).
+- Simpler: Flexible. Cloudflare speaks HTTPS to users and HTTP to your origin.
+  - Leave TLS vars unset. The app serves HTTP on `PORT` and Cloudflare proxies it.
+  - Note: Flexible is less secure; prefer Full (strict) when possible.
 
-4) scoreboard
-   - Shows total scores and trophy icons with a celebratory animation.
-   - Auto-advances to the next round after 30s.
-   - Any player can tap “Start Next Round” to advance immediately.
+Cloudflare rules (nice to have)
+- Always Use HTTPS: enable in SSL/TLS → Edge Certificates.
+- Non‑www → root redirect: Rules → Redirect Rules → `www.backwardswords.com/*` → `https://backwardswords.com/$1` (301)
+- Bypass cache for SSE: Rules → Cache Rules → If Path equals `/sse*` → Cache Level: Bypass.
 
-Timing summary
-- Lead record: 30s
-- Replicate: 30s
-- Voting: 30s (or earlier if all votes are in)
-- Scoreboard: 30s (or earlier if a player presses Next Round)
+Ports and firewalls
+- Open inbound TCP 8000 (HTTP) and, if you use Full/Strict with origin TLS, 8443 (HTTPS). Cloudflare supports connecting to port 8443.
 
-Controls
-- Play Forward/Backward: Available during replicate and later.
-- Recording buttons: Start/Stop for 5s capped recordings for lead and replicators.
-- Submit buttons: Uploads the current recording to the server.
-- Voting selectors and Submit button: Choose distinct first/second choices.
-- Next Round button: Available on the scoreboard for faster progression.
+Domain‑specific tweaks in code
+- The server now detects Cloudflare/`X-Forwarded-*` headers and serves HTTP directly behind the proxy without forcing an origin‑port HTTPS redirect.
+- The site title shows “Backwards Words”. All app requests are relative paths and work at `https://backwardswords.com`.
 
-Server API (internal)
-- POST /join { code, name } → { code, playerId, state }
-- GET /sse?code=CODE&playerId=PID → EventSource stream of state updates
-- POST /upload/lead?code=CODE&playerId=PID (binary audio/webm)
-- POST /upload/replicate?code=CODE&playerId=PID (binary audio/webm)
-- POST /vote { code, playerId, first, second }
-- POST /control/start_next_round { code }
-- GET /state?code=CODE&playerId=PID → current state snapshot
+Game flow
+- lead_record → replicate → voting → scoreboard, with auto‑advance when possible.
+- Audio is saved under `./data/<CODE>/round_N/` on the server. The `data/` directory is intentionally not committed.
 
-Notes for deployment/testing
-- Self-host friendly: no external dependencies or build step needed.
-- Audio is stored under ./data/CODE/round_N. Data persists as long as the process runs and the files stay on disk.
-- If your network blocks mDNS/hostnames, connect by IP (e.g., http://192.168.1.50:8000).
+API (internal)
+- POST `/join` { code, name } → { code, playerId, state }
+- GET `/sse?code=CODE&playerId=PID` → EventSource updates
+- POST `/upload/lead?code=CODE&playerId=PID` (binary audio)
+- POST `/upload/replicate?code=CODE&playerId=PID` (binary audio)
+- POST `/vote` { code, playerId, first, second }
+- POST `/control/start_next_round` { code }
+- GET `/state?code=CODE&playerId=PID` → snapshot
 
-Mobile compatibility
-- Large touch targets, responsive topbar, and no heavy UI frameworks.
-- Uses the browser MediaRecorder API (supported on most modern mobile browsers). If a device does not support audio/webm recording, try Chrome/Edge/Firefox on Android or iOS 14+ Safari.
-
-Development notes
-- The server is a single Node.js file (server.js). Static assets are under app/static.
-- No external Node dependencies; npm start simply runs the server.
-
+Notes
+- Run under a process manager (systemd, pm2) for resilience.
+- Avoid committing `data/` or TLS material; they’re excluded by `.gitignore`.
+- If audio playback fails on certain mobiles, wait briefly after upload; the server produces reversed WAVs for maximum compatibility.
