@@ -6,6 +6,7 @@ let repMedia = { chunks: [], recorder: null, lastBlob: null, autoUploadTimeout: 
 let audioCtx = null;
 const AUDIO_SCALE = 2; // Keep in sync with CSS .audio-large transform
 let selectedCrown = null; // ownerHiddenId crowned by this player
+const BASE_URL = 'https://backwardswords.com';
 let lastRoundIndex = null; // track when a new round starts
 
 // Media helpers
@@ -87,7 +88,7 @@ function getJoinInputCode() {
 
 function buildInviteLink(codeOverride) {
   const code = (codeOverride || getJoinInputCode() || state?.code || my.code || '').toUpperCase();
-  const origin = location.origin;
+  const origin = BASE_URL || location.origin;
   const url = `${origin}/?pass=${encodeURIComponent(code)}`;
   return { code, url };
 }
@@ -101,7 +102,19 @@ function updateInviteInput(prefix, codeOverride) {
   input.onclick = async () => {
     const latest = buildInviteLink(codeOverride || getJoinInputCode());
     input.value = latest.url;
-    try { input.focus(); input.select(); await navigator.clipboard.writeText(latest.url); uiSuccess(); } catch {}
+    try {
+      input.focus(); input.select();
+      await navigator.clipboard.writeText(latest.url);
+      // If we're on the join screen, also prefill the password and focus name
+      if (prefix === 'join') {
+        const code = (getJoinInputCode() || latest.code || '').toUpperCase();
+        const codeInp = document.querySelector('input[name="code"]');
+        if (codeInp && code) codeInp.value = code;
+        const nameInp = document.querySelector('input[name="name"]');
+        if (nameInp) { nameInp.focus(); nameInp.select?.(); }
+      }
+      uiSuccess();
+    } catch {}
   };
 }
 
@@ -389,6 +402,11 @@ $('#join-form').addEventListener('submit', async (ev) => {
     if (pass) {
       const inp = document.querySelector('input[name="code"]');
       if (inp) inp.value = String(pass).toUpperCase();
+      // Focus the name field so the user can start typing immediately (macOS Chrome friendly)
+      setTimeout(() => {
+        const nameInp = document.querySelector('input[name="name"]');
+        try { if (nameInp) { nameInp.focus(); nameInp.select?.(); } } catch {}
+      }, 50);
     }
   } catch {}
   // Initialize join-screen invite URL with current input
