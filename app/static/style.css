@@ -5,6 +5,7 @@ body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; backgro
 .players ul { list-style: none; padding: 0; }
 .players li { padding: 4px 0; display: flex; align-items: center; gap: 6px; }
 .player-name { font-weight: 600; text-transform: uppercase; }
+#players-list .player-name.spectator { color: #99b1ff; }
 #player-name { text-transform: uppercase; }
 #game-code { text-transform: uppercase; }
 .status { color: #8aa; font-size: 12px; margin-left: 6px; }

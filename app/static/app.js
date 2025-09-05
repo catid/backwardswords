@@ -155,7 +155,7 @@ function render() {
     const li = el('li', { class: 'player-row' });
     const isPart = r ? participants.includes(p.id) : true;
     const av = el('span', { class: 'avatar' + (!isPart && r ? ' avatar-ghost' : '') }, (!isPart && r) ? '👻' : (p.avatar || '🙂'));
-    const nameSpan = el('span', { class: 'player-name' }, (p.name || '').toUpperCase() + (!isPart && r ? ' (spectator)' : ''));
+    const nameSpan = el('span', { class: 'player-name' + (!isPart && r ? ' spectator' : '') }, (p.name || '').toUpperCase() + (!isPart && r ? ' (spectator)' : ''));
     li.appendChild(av);
     li.appendChild(nameSpan);
     // Crown for top scorer(s)
