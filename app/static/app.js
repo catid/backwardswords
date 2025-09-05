@@ -78,6 +78,42 @@ function adjustAudioRows() {
   });
 }
 
+// Build an invite link with the current party code as URL parameter
+function buildInviteLink() {
+  const code = (state?.code || my.code || '').toUpperCase();
+  const origin = location.origin;
+  const url = `${origin}/?code=${encodeURIComponent(code)}`;
+  return { code, url };
+}
+
+function setShareTargets(prefix) {
+  const { code, url } = buildInviteLink();
+  const headline = `Join my Backwards Words party: ${code}`;
+  const text = `${headline}\nOpen: ${url}`;
+
+  const shareBtn = document.getElementById(`share-${prefix}-btn`);
+  if (shareBtn) {
+    shareBtn.onclick = async () => {
+      try {
+        if (navigator.share) { await navigator.share({ title: 'Backwards Words', text: headline, url }); uiSuccess(); }
+        else { await navigator.clipboard.writeText(url); alert('Invite link copied to clipboard'); uiSuccess(); }
+      } catch {}
+    };
+  }
+  const sms = document.getElementById(`share-${prefix}-sms`);
+  if (sms) sms.href = `sms:?&body=${encodeURIComponent(text)}`;
+  const wa = document.getElementById(`share-${prefix}-wa`);
+  if (wa) wa.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  const copy = document.getElementById(`invite-link-${prefix}`);
+  if (copy) {
+    copy.textContent = url;
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(url); uiSuccess(); copy.classList.add('copied'); } catch {}
+    };
+    copy.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy.click(); } };
+  }
+}
+
 async function initSSE() {
   if (evs) evs.close();
   evs = new EventSource(`/sse?code=${encodeURIComponent(my.code)}&playerId=${encodeURIComponent(my.id)}`);
@@ -144,6 +180,9 @@ function render() {
   const isLead = r.leadPlayerId === my.id;
   if (r.state === 'lead_record') {
     if (isLead) show('#panel-lead'); else show('#panel-wait-lead');
+    // Update share targets for both lead/waiting views
+    setShareTargets('lead');
+    setShareTargets('wait');
   } else if (r.state === 'replicate') {
     // If I've already submitted, move me to the voting screen (waiting state); otherwise keep me on replicate.
     if (r.replicateStatus && r.replicateStatus[my.id]) {
@@ -342,6 +381,18 @@ $('#join-form').addEventListener('submit', async (ev) => {
   render();
   initSSE();
 });
+
+// Prefill join code from URL (?code=)
+(function prefillFromURL() {
+  try {
+    const u = new URL(location.href);
+    const code = u.searchParams.get('code');
+    if (code) {
+      const inp = document.querySelector('input[name="code"]');
+      if (inp) inp.value = String(code).toUpperCase();
+    }
+  } catch {}
+})();
 
 // Lead recording
 // No-op stub retained (was previously used by MediaRecorder path)
