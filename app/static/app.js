@@ -419,6 +419,8 @@ $('#join-form').addEventListener('submit', async (ev) => {
     setTimeout(upd, 50);
     setTimeout(upd, 300);
     setTimeout(upd, 1000);
+    // As a last resort for some Chrome autofill cases, poll briefly
+    let tries = 0; const iv = setInterval(() => { upd(); if (++tries > 20) clearInterval(iv); }, 250);
   }
 })();
 
