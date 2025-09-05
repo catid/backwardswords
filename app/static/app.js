@@ -142,6 +142,7 @@ function render() {
   const r = state.currentRound;
   const replicateStatus = r?.replicateStatus || {};
   const votesStatus = r?.votesStatus || {};
+  const participants = r?.participantIds || [];
   const scores = state.scores || {};
   let topScore = -Infinity; let hasAnyScore = false;
   for (const v of Object.values(scores)) { if (typeof v === 'number') { hasAnyScore = true; if (v > topScore) topScore = v; } }
@@ -161,8 +162,13 @@ function render() {
     const sts = [];
     sts.push(p.connected ? '🟢' : '⚫');
     if (r) {
-      if (r.state === 'replicate') sts.push(replicateStatus[p.id] ? 'submitted' : 'working');
-      if (r.state === 'voting') sts.push(votesStatus[p.id] ? 'voted' : 'voting');
+      const isPart = participants.includes(p.id);
+      if (r.state === 'replicate') {
+        if (isPart) sts.push(replicateStatus[p.id] ? 'submitted' : 'working'); else sts.push('spectating');
+      }
+      if (r.state === 'voting') {
+        if (isPart) sts.push(votesStatus[p.id] ? 'voted' : 'voting'); else sts.push('spectating');
+      }
     }
     li.appendChild(el('span', { class: 'status' }, '• ' + sts.join(' • ')));
     // Score chip
@@ -195,11 +201,19 @@ function render() {
     updateInviteInput('lead');
     updateInviteInput('wait');
   } else if (r.state === 'replicate') {
+    const isPart = participants.includes(my.id);
     // If I've already submitted, move me to the voting screen (waiting state); otherwise keep me on replicate.
-    if (r.replicateStatus && r.replicateStatus[my.id]) {
+    if (isPart && r.replicateStatus && r.replicateStatus[my.id]) {
       show('#panel-vote');
     } else {
       show('#panel-replicate');
+      // Spectator mode for non-participants: hide recording UI and show note
+      const note = document.getElementById('spectator-note');
+      const yourGroup = document.getElementById('your-rec-group');
+      if (note && yourGroup) {
+        if (!isPart) { note.classList.remove('hidden'); yourGroup.classList.add('hidden'); }
+        else { note.classList.add('hidden'); yourGroup.classList.remove('hidden'); }
+      }
     }
   } else if (r.state === 'voting') {
     if (votesStatus && votesStatus[my.id]) {

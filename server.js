@@ -20,9 +20,10 @@ class Player {
 }
 
 class RoundState {
-  constructor(index, leadId) {
+  constructor(index, leadId, participants) {
     this.index = index;
     this.lead_player_id = leadId;
+    this.participant_ids = Array.from(new Set(participants || []));
     this.state = 'lead_record';
     // Leader gets unlimited time to submit the initial clip
     this.deadline = Infinity;
@@ -52,12 +53,13 @@ class Game {
       cur = {
         index: r.index,
         state: r.state,
+        participantIds: r.participant_ids,
         deadline: r.deadline,
         leadPlayerId: r.lead_player_id,
         leadClipUrl: this.clipUrl(r.lead_clip_path),
         leadClipRevUrl: this.clipUrl(r.lead_clip_rev_path),
-        replicateStatus: Object.fromEntries(Object.keys(this.players).map(pid => [pid, !!r.replicates[pid]])),
-        votesStatus: Object.fromEntries(Object.keys(this.players).map(pid => [pid, !!r.votes[pid]])),
+        replicateStatus: Object.fromEntries(r.participant_ids.map(pid => [pid, !!r.replicates[pid]])),
+        votesStatus: Object.fromEntries(r.participant_ids.map(pid => [pid, !!r.votes[pid]])),
       };
       const canSeeVotesEarly = (r.state === 'replicate') && (requester === r.lead_player_id || !!r.replicates[requester]);
       if (requester && (r.state === 'voting' || r.state === 'scoreboard' || canSeeVotesEarly)) {
@@ -221,7 +223,7 @@ async function reverseWav(inputPath, outputPath) {
     if (!game.current_round && Object.keys(game.players).length >= 2) {
       const ids = Object.keys(game.players);
       const lead = ids[Math.floor(now()) % ids.length];
-      game.current_round = new RoundState(1, lead);
+      game.current_round = new RoundState(1, lead, ids);
     }
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ code: game.code, playerId: pid, state: game.toPublic(pid) }));
@@ -282,6 +284,8 @@ async function reverseWav(inputPath, outputPath) {
     const game = getGame(code);
     const r = game.current_round;
     if (!r || r.state !== 'replicate') { res.statusCode = 400; return res.end('Not accepting replicate'); }
+    // Only round participants may submit for this round
+    if (!r.participant_ids.includes(playerId)) { res.statusCode = 403; return res.end('Not a participant this round'); }
     const buf = await collectBinary(req);
     const extHeader = contentTypeToExt(req.headers['content-type']);
     const dir = path.join(game.dir(), `round_${r.index}`);
@@ -301,8 +305,8 @@ async function reverseWav(inputPath, outputPath) {
     }
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ ok: true, clipUrl: game.clipUrl(pth) }));
-    // If all players (including lead) have submitted, move to voting
-    const need = Object.keys(game.players);
+    // If all participants (including lead) have submitted, move to voting
+    const need = r.participant_ids;
     const done = need.every(pid => !!r.replicates[pid]);
     if (done) { r.state = 'voting'; r.deadline = Infinity; }
     sendState(game);
@@ -324,7 +328,7 @@ async function reverseWav(inputPath, outputPath) {
     if (mustDiffer && first && second && first === second) { res.statusCode = 400; return res.end('choices must differ'); }
     r.votes[pid] = [first, second];
     // If all players have voted, tally now
-    const ids = Object.keys(game.players);
+    const ids = r.participant_ids;
     const allVoted = ids.every(id => !!r.votes[id]);
     if (allVoted) {
       tallyAndFinish(game);
@@ -347,7 +351,7 @@ async function reverseWav(inputPath, outputPath) {
     const prev = r.lead_player_id; let idx = ids.indexOf(prev); if (idx < 0) idx = -1; idx = (idx + 1) % ids.length;
     const nextLead = ids[idx];
     game.rounds.push(r);
-    game.current_round = new RoundState(r.index + 1, nextLead);
+    game.current_round = new RoundState(r.index + 1, nextLead, Object.keys(game.players));
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ ok: true }));
     sendState(game);
@@ -369,7 +373,10 @@ async function reverseWav(inputPath, outputPath) {
 function tallyAndFinish(game) {
   const r = game.current_round; if (!r) return;
   const pts = {}; Object.keys(game.players).forEach(pid => pts[pid] = 0);
-  Object.values(r.votes).forEach(([first, second]) => {
+  // Count only votes from participants to avoid spectators influencing results
+  Object.entries(r.votes).forEach(([voter, pair]) => {
+    if (!r.participant_ids.includes(voter)) return;
+    const [first, second] = pair;
     // Crown system: first choice (crown) gives 1 point; second gives 0
     if (first && game.players[first]) pts[first] += 1;
   });
