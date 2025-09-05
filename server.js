@@ -385,12 +385,12 @@ async function reverseWav(inputPath, outputPath) {
     const game = getGame(code);
     const r = game.current_round;
     if (!r || r.state !== 'scoreboard') { res.statusCode = 400; return res.end('Not at end'); }
-    const ids = Object.keys(game.players);
-    if (!ids.length) { res.statusCode = 400; return res.end('No players'); }
+    const ids = Object.keys(game.players).filter(id => game.players[id].connected);
+    if (!ids.length) { res.statusCode = 400; return res.end('No connected players'); }
     const prev = r.lead_player_id; let idx = ids.indexOf(prev); if (idx < 0) idx = -1; idx = (idx + 1) % ids.length;
     const nextLead = ids[idx];
     game.rounds.push(r);
-    game.current_round = new RoundState(r.index + 1, nextLead, Object.keys(game.players));
+    game.current_round = new RoundState(r.index + 1, nextLead, ids);
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ ok: true }));
     sendState(game);
@@ -435,12 +435,12 @@ setInterval(() => {
       continue;
     } else if (r.state === 'scoreboard') {
       // Auto-advance to next round
-      const ids = Object.keys(game.players);
+      const ids = Object.keys(game.players).filter(id => game.players[id].connected);
       if (!ids.length) continue;
       const prev = r.lead_player_id; let idx = ids.indexOf(prev); if (idx < 0) idx = -1; idx = (idx + 1) % ids.length;
       const nextLead = ids[idx];
       game.rounds.push(r);
-      game.current_round = new RoundState(r.index + 1, nextLead);
+      game.current_round = new RoundState(r.index + 1, nextLead, ids);
     }
     sendState(game);
   }
