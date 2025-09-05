@@ -79,7 +79,8 @@ class Game {
       };
       const canSeeVotesEarly = (r.state === 'replicate') && (requester === r.lead_player_id || !!r.replicates[requester]);
       const isParticipant = requester && r.participant_ids.includes(requester);
-      const canShowClips = (r.state === 'voting') ? !!isParticipant
+      // During voting and scoreboard, share clips with all viewers (spectators see read-only UI)
+      const canShowClips = (r.state === 'voting') ? true
                           : (r.state === 'scoreboard') ? true
                           : canSeeVotesEarly;
       if (requester && canShowClips) {

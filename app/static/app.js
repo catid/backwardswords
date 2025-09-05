@@ -255,13 +255,7 @@ function render() {
     }
   } else if (r.state === 'voting') {
     const isPart = participants.includes(my.id);
-    if (!isPart) {
-      // Spectators: show only lead playback (re-use replicate panel with recording UI hidden)
-      show('#panel-replicate');
-      const note = document.getElementById('spectator-note');
-      const yourGroup = document.getElementById('your-rec-group');
-      if (note && yourGroup) { note.classList.remove('hidden'); yourGroup.classList.add('hidden'); }
-    } else if (votesStatus && votesStatus[my.id]) {
+    if (isPart && votesStatus && votesStatus[my.id]) {
       show('#panel-wait-voting');
     } else {
       show('#panel-vote');
