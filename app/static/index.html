@@ -29,6 +29,18 @@
         <button type="submit">Join</button>
       </form>
       <p class="hint">Share the game code with everyone. When at least two players joined, the game starts.</p>
+      <div class="group" id="invite-group-join">
+        <h3>Invite Friends</h3>
+        <div class="share-row">
+          <button id="share-join-btn" class="btn-forward" title="System share (if supported)">Share</button>
+          <a id="share-join-sms" class="btn-ghost" href="#" target="_blank" rel="noopener">SMS</a>
+          <a id="share-join-wa" class="btn-ghost" href="#" target="_blank" rel="noopener">WhatsApp</a>
+        </div>
+        <div class="copy-row">
+          <div class="copy-hint">Tap to copy link</div>
+          <div id="invite-link-join" class="copy-link" role="button" tabindex="0"></div>
+        </div>
+      </div>
     </div>
 
     <div id="game-screen" class="screen hidden">

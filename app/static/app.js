@@ -79,21 +79,29 @@ function adjustAudioRows() {
 }
 
 // Build an invite link with the current party code as URL parameter
-function buildInviteLink() {
-  const code = (state?.code || my.code || '').toUpperCase();
+function getJoinInputCode() {
+  const inp = document.querySelector('input[name="code"]');
+  const v = inp ? String(inp.value || '') : '';
+  return v.trim().toUpperCase();
+}
+
+function buildInviteLink(codeOverride) {
+  const code = (codeOverride || getJoinInputCode() || state?.code || my.code || '').toUpperCase();
   const origin = location.origin;
   const url = `${origin}/?code=${encodeURIComponent(code)}`;
   return { code, url };
 }
 
-function setShareTargets(prefix) {
-  const { code, url } = buildInviteLink();
+function setShareTargets(prefix, codeOverride) {
+  const { code, url } = buildInviteLink(codeOverride);
   const headline = `Join my Backwards Words party: ${code}`;
   const text = `${headline}\nOpen: ${url}`;
 
   const shareBtn = document.getElementById(`share-${prefix}-btn`);
   if (shareBtn) {
+    shareBtn.disabled = !code;
     shareBtn.onclick = async () => {
+      if (!code) return;
       try {
         if (navigator.share) { await navigator.share({ title: 'Backwards Words', text: headline, url }); uiSuccess(); }
         else { await navigator.clipboard.writeText(url); alert('Invite link copied to clipboard'); uiSuccess(); }
@@ -101,13 +109,20 @@ function setShareTargets(prefix) {
     };
   }
   const sms = document.getElementById(`share-${prefix}-sms`);
-  if (sms) sms.href = `sms:?&body=${encodeURIComponent(text)}`;
+  if (sms) {
+    if (code) { sms.href = `sms:?&body=${encodeURIComponent(text)}`; sms.classList.remove('link-disabled'); sms.removeAttribute('aria-disabled'); sms.removeAttribute('tabindex'); }
+    else { sms.href = '#'; sms.classList.add('link-disabled'); sms.setAttribute('aria-disabled', 'true'); sms.setAttribute('tabindex', '-1'); }
+  }
   const wa = document.getElementById(`share-${prefix}-wa`);
-  if (wa) wa.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  if (wa) {
+    if (code) { wa.href = `https://wa.me/?text=${encodeURIComponent(text)}`; wa.classList.remove('link-disabled'); wa.removeAttribute('aria-disabled'); wa.removeAttribute('tabindex'); }
+    else { wa.href = '#'; wa.classList.add('link-disabled'); wa.setAttribute('aria-disabled', 'true'); wa.setAttribute('tabindex', '-1'); }
+  }
   const copy = document.getElementById(`invite-link-${prefix}`);
   if (copy) {
-    copy.textContent = url;
+    copy.textContent = code ? url : 'Enter a code to generate an invite link';
     copy.onclick = async () => {
+      if (!code) return;
       try { await navigator.clipboard.writeText(url); uiSuccess(); copy.classList.add('copied'); } catch {}
     };
     copy.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy.click(); } };
@@ -392,6 +407,13 @@ $('#join-form').addEventListener('submit', async (ev) => {
       if (inp) inp.value = String(code).toUpperCase();
     }
   } catch {}
+  // Initialize join-screen share targets with current input
+  setShareTargets('join');
+  const inp = document.querySelector('input[name="code"]');
+  if (inp) inp.addEventListener('input', () => {
+    const up = getJoinInputCode();
+    setShareTargets('join', up);
+  });
 })();
 
 // Lead recording
