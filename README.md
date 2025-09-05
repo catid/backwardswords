@@ -1,81 +1,62 @@
-Backwards Words (backwardswords.com)
+Backwards Words — Minimal README (for AI agents)
 
-Overview
-- A fast party game: one player records a short clip (<= 5s). Everyone listens, plays it forward/backward, records their best backwards imitation, and crowns a winner. Mobile‑friendly and LAN/Internet friendly.
+**What It Is**
+- Simple party game server + static frontend. No DB. In‑memory game state. Audio files saved under `data/`.
 
-Quick Start (local)
-- Requirements: Node.js 18+
-- Install and run: `npm ci && npm start`
-- Open: http://localhost:8000
+**Repo Layout**
+- `server.js`: single Node.js server (HTTP+HTTPS, API, static).
+- `app/static/`: `index.html`, `style.css`, `app.js` frontend.
+- `data/`: runtime audio storage per game code. Not committed.
+- `backwardswords.com.pem` / `backwardswords.com.key`: origin TLS cert/key (ignored by Git).
 
-Production Hosting on a Remote Server
+**Requirements**
+- Node.js >= 18 (tested on v24.x). No build step.
 
-Server prep
-- Install Node.js 18+ and Git.
-- Clone the repo: `git clone https://github.com/<you>/<repo>.git && cd repo`
+**Run**
 - Install: `npm ci`
-- Copy env: `cp .env.example .env` and adjust ports if needed (`PORT=8000`, `HTTPS_PORT=8443`).
+- Default (origin HTTPS on 8443; helper HTTP on 8000): `npm start`
+  - Expect a NAT rule to forward public 443 → 8443 if hosting.
+- Alternative (bind 80/443 directly): `npm run start:443`
+  - Requires `sudo setcap cap_net_bind_service=+ep $(which node)` or root.
 
-Run the app (systemd)
-- Create `/etc/systemd/system/backwardswords.service`:
-  - [Unit]
-    Description=Backwards Words
-    After=network.target
-  - [Service]
-    WorkingDirectory=/opt/backwardswords
-    ExecStart=/usr/bin/node server.js
-    Restart=always
-    Environment=PORT=8000
-    Environment=HTTPS_PORT=8443
-  - [Install]
-    WantedBy=multi-user.target
-- Enable/start: `sudo systemctl daemon-reload && sudo systemctl enable --now backwardswords`.
+**Ports**
+- HTTP: `PORT` (default 8000)
+- HTTPS: `HTTPS_PORT` (default 8443)
 
-Cloudflare SSL/TLS (recommended)
-- Goal: Use Cloudflare for public HTTPS at https://backwardswords.com while the origin app runs on your server.
+**TLS Cert Source Order**
+- `SSL_KEY` + `SSL_CERT` (PEM strings in env)
+- `SSL_KEY_FILE` + `SSL_CERT_FILE` (+ optional `SSL_CA_FILE`)
+- Local files `backwardswords.com.key` and `backwardswords.com.pem`
+- Fallback: `cert/key.pem` via mkcert or self‑signed for dev
 
-DNS
-- In Cloudflare → DNS:
-  - Add an A record `@` pointing to your server’s public IP. Proxied (orange cloud) ON.
-  - Optionally add `www` CNAME → `backwardswords.com` (proxied ON) and set a redirect for `www` → root.
+**Key Behavior**
+- Codes and player names are normalized to UPPERCASE on input and display.
+- Server generates reversed WAVs for robust mobile playback.
+- Scoreboard shows podium; player list always shows scores and crowns top scorer(s).
 
-SSL/TLS mode
-- Preferred: Full (strict). Generate an “Origin Certificate” in Cloudflare → SSL/TLS → Origin Server.
-  - Download the certificate and private key to your server (e.g., `/etc/ssl/cloudflare/origin.crt` and `/etc/ssl/cloudflare/origin.key`).
-  - In `.env`, set:
-    - `SSL_CERT_FILE=/etc/ssl/cloudflare/origin.crt`
-    - `SSL_KEY_FILE=/etc/ssl/cloudflare/origin.key`
-  - Restart the service. The app will terminate HTTPS itself on `HTTPS_PORT` (default 8443).
-- Simpler: Flexible. Cloudflare speaks HTTPS to users and HTTP to your origin.
-  - Leave TLS vars unset. The app serves HTTP on `PORT` and Cloudflare proxies it.
-  - Note: Flexible is less secure; prefer Full (strict) when possible.
+**API (Minimal)**
+- `POST /join` body `{ code, name, avatar? }` → `{ code, playerId, state }`
+- `GET /sse?code=CODE&playerId=PID` → Server‑Sent Events with state
+- `POST /upload/lead?code=CODE&playerId=PID` → binary body (audio)
+- `POST /upload/replicate?code=CODE&playerId=PID` → binary body (audio)
+- `POST /vote` body `{ code, playerId, first, second }`
+- `POST /control/start_next_round` body `{ code }`
+- `GET /state?code=CODE&playerId=PID` → public state snapshot
 
-Cloudflare rules (nice to have)
-- Always Use HTTPS: enable in SSL/TLS → Edge Certificates.
-- Non‑www → root redirect: Rules → Redirect Rules → `www.backwardswords.com/*` → `https://backwardswords.com/$1` (301)
-- Bypass cache for SSE: Rules → Cache Rules → If Path equals `/sse*` → Cache Level: Bypass.
+**Persistence / Data**
+- Audio files: `data/<CODE>/round_<N>/`
+- In‑memory game state (lost on restart). No migrations.
 
-Ports and firewalls
-- Open inbound TCP 8000 (HTTP) and, if you use Full/Strict with origin TLS, 8443 (HTTPS). Cloudflare supports connecting to port 8443.
+**Process Manager (systemd)**
+- Install via script:
+  - `chmod +x scripts/install-systemd.sh`
+  - `./scripts/install-systemd.sh --user catid --workdir $(pwd) --port 8000 --https-port 8443`
+  - This writes `/etc/systemd/system/backwardswords.service`, reloads systemd, enables and starts it.
+  - View status: `systemctl status backwardswords --no-pager`
+  - Tail logs: `journalctl -u backwardswords -f`
 
-Domain‑specific tweaks in code
-- The server now detects Cloudflare/`X-Forwarded-*` headers and serves HTTP directly behind the proxy without forcing an origin‑port HTTPS redirect.
-- The site title shows “Backwards Words”. All app requests are relative paths and work at `https://backwardswords.com`.
+**Git Hygiene**
+- `.gitignore` excludes: `data/`, `cert/`, `*.pem`, `*.key`, logs, node_modules.
 
-Game flow
-- lead_record → replicate → voting → scoreboard, with auto‑advance when possible.
-- Audio is saved under `./data/<CODE>/round_N/` on the server. The `data/` directory is intentionally not committed.
-
-API (internal)
-- POST `/join` { code, name } → { code, playerId, state }
-- GET `/sse?code=CODE&playerId=PID` → EventSource updates
-- POST `/upload/lead?code=CODE&playerId=PID` (binary audio)
-- POST `/upload/replicate?code=CODE&playerId=PID` (binary audio)
-- POST `/vote` { code, playerId, first, second }
-- POST `/control/start_next_round` { code }
-- GET `/state?code=CODE&playerId=PID` → snapshot
-
-Notes
-- Run under a process manager (systemd, pm2) for resilience.
-- Avoid committing `data/` or TLS material; they’re excluded by `.gitignore`.
-- If audio playback fails on certain mobiles, wait briefly after upload; the server produces reversed WAVs for maximum compatibility.
+**Notes**
+- Behind Cloudflare, keep DNS proxied and use “Full (strict)” with an Origin Certificate. Public 443 → origin 8443 works with current NAT.

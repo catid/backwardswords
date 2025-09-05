@@ -1,0 +1,30 @@
+[Unit]
+Description=BackwardsWords game server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Runtime user and working directory
+User=__USER__
+WorkingDirectory=__WORKDIR__
+
+# Environment
+Environment=NODE_ENV=production
+Environment=PORT=__PORT__
+Environment=HTTPS_PORT=__HTTPS_PORT__
+Environment=SSL_CERT_FILE=__SSL_CERT_FILE__
+Environment=SSL_KEY_FILE=__SSL_KEY_FILE__
+# Ensure Node from nvm is found
+Environment=PATH=__PATH__
+
+# Start
+ExecStart=__NODE_BIN__ server.js
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=15
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
+
