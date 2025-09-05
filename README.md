@@ -49,8 +49,8 @@ Backwards Words — Minimal README (for AI agents)
 
 **Process Manager (systemd)**
 - Install via script:
-  - `chmod +x scripts/install-systemd.sh`
-  - `./scripts/install-systemd.sh --user catid --workdir $(pwd) --port 8000 --https-port 8443`
+  - `chmod +x ./install-systemd.sh`
+  - `./install-systemd.sh --user catid --workdir $(pwd) --port 8000 --https-port 8443`
   - This writes `/etc/systemd/system/backwardswords.service`, reloads systemd, enables and starts it.
   - View status: `systemctl status backwardswords --no-pager`
   - Tail logs: `journalctl -u backwardswords -f`

@@ -8,7 +8,7 @@ set -euo pipefail
 
 UNIT_NAME="backwardswords"
 USER_NAME="$(id -un)"
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 WORKDIR="$REPO_ROOT"
 PORT="8000"
 HTTPS_PORT="8443"
