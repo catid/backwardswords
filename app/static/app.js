@@ -137,7 +137,8 @@ function render() {
     lastRoundIndex = r.index;
     selectedCrown = null;
   }
-  $('#phase').textContent = r.state;
+  // Friendly phase name: call the final screen "Podium"
+  $('#phase').textContent = (r.state === 'scoreboard') ? 'Podium' : r.state;
 
   // Panels
   const isLead = r.leadPlayerId === my.id;
