@@ -359,6 +359,7 @@ async function reverseWav(inputPath, outputPath) {
     const r = game.current_round;
     if (!r || r.state !== 'voting') { res.statusCode = 400; return res.end('Not voting'); }
     const pid = String(body.playerId || '');
+    if (!r.participant_ids.includes(pid)) { res.statusCode = 403; return res.end('Spectators cannot vote'); }
     let first = body.first ? String(body.first) : null;
     let second = body.second ? String(body.second) : null;
     // Only enforce distinct choices if there are at least two clips to choose from

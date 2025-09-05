@@ -256,28 +256,41 @@ function render() {
   const voteBtn = $('#submit-votes');
   const skipBtn = $('#skip-vote');
   const voteWait = $('#vote-waiting');
-  if (r.state === 'voting' && !(votesStatus && votesStatus[my.id])) {
-    if (voteBtn) voteBtn.disabled = false;
-    if (skipBtn) skipBtn.disabled = false;
-    if (voteWait) voteWait.classList.add('hidden');
-    setupVoting(r);
-  } else if (r.state === 'voting' && (votesStatus && votesStatus[my.id])) {
-    // Already voted: show waiting screen; ensure controls are disabled
-    if (voteBtn) voteBtn.disabled = true;
-    if (skipBtn) skipBtn.disabled = true;
-    if (voteWait) voteWait.classList.add('hidden');
-    const container = $('#vote-list'); if (container) container.innerHTML = '';
+  const specNote = $('#vote-spectator-note');
+  if (r.state === 'voting') {
+    const isPart = participants.includes(my.id);
+    if (!isPart) {
+      if (voteBtn) voteBtn.disabled = true;
+      if (skipBtn) skipBtn.disabled = true;
+      if (voteWait) voteWait.classList.add('hidden');
+      if (specNote) specNote.classList.remove('hidden');
+      setupVoting(r, { readonly: true });
+    } else if (votesStatus && votesStatus[my.id]) {
+      // Already voted: show waiting screen; ensure controls are disabled
+      if (voteBtn) voteBtn.disabled = true;
+      if (skipBtn) skipBtn.disabled = true;
+      if (voteWait) voteWait.classList.add('hidden');
+      if (specNote) specNote.classList.add('hidden');
+      const container = $('#vote-list'); if (container) container.innerHTML = '';
+    } else {
+      if (voteBtn) voteBtn.disabled = false;
+      if (skipBtn) skipBtn.disabled = false;
+      if (voteWait) voteWait.classList.add('hidden');
+      if (specNote) specNote.classList.add('hidden');
+      setupVoting(r, { readonly: false });
+    }
   } else if ((r.state === 'replicate') && (r.replicateStatus && r.replicateStatus[my.id])) {
     // Waiting state: user has submitted; show current submissions but disable voting
     if (voteBtn) voteBtn.disabled = true;
     if (skipBtn) skipBtn.disabled = true;
     if (voteWait) voteWait.classList.remove('hidden');
-    setupVoting(r);
+    setupVoting(r, { readonly: true });
   } else {
     if (voteBtn) voteBtn.disabled = true;
     if (skipBtn) skipBtn.disabled = true;
     if (voteWait) voteWait.classList.add('hidden');
     const container = $('#vote-list'); if (container) container.innerHTML = '';
+    if (specNote) specNote.classList.add('hidden');
   }
 
   // Scores
@@ -324,7 +337,8 @@ function render() {
   adjustAudioRows();
 }
 
-function setupVoting(r) {
+function setupVoting(r, opts = {}) {
+  const readonly = !!opts.readonly;
   const clips = r.voteClips || [];
   const container = $('#vote-list');
   container.innerHTML = '';
@@ -359,15 +373,19 @@ function setupVoting(r) {
         alert('Unable to play the reversed clip.');
       }
     });
-    crown.addEventListener('click', () => {
-      selectedCrown = c.ownerHiddenId;
-      // Update visuals: only one crowned
-      document.querySelectorAll('#vote-list .clip').forEach(elm => elm.classList.remove('crowned'));
-      document.querySelectorAll('#vote-list .crown-btn').forEach(btn => btn.classList.remove('crown-active'));
-      div.classList.add('crowned');
-      crown.classList.add('crown-active');
-      uiCrown();
-    });
+    if (!readonly) {
+      crown.addEventListener('click', () => {
+        selectedCrown = c.ownerHiddenId;
+        // Update visuals: only one crowned
+        document.querySelectorAll('#vote-list .clip').forEach(elm => elm.classList.remove('crowned'));
+        document.querySelectorAll('#vote-list .crown-btn').forEach(btn => btn.classList.remove('crown-active'));
+        div.classList.add('crowned');
+        crown.classList.add('crown-active');
+        uiCrown();
+      });
+    } else {
+      crown.disabled = true;
+    }
     const btnWrap = el('div', { class: 'clip-controls' });
     // Show Reversed first, then Forward
     btnWrap.appendChild(btnR);

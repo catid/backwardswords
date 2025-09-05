@@ -58,6 +58,7 @@ audio { display: block; margin: 8px 0; }
 .crown-btn .emoji { margin-right: 6px; filter: grayscale(1) brightness(0.6) contrast(1.1); transition: filter 120ms ease; }
 .crown-active { background: #f1c40f; color: #222; border-color: #d4ac0d; }
 .crown-active .emoji { filter: none; }
+.crown-btn:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.4) brightness(0.9); }
 /* +1 badge on crowned clip */
 .clip.crowned::after {
   content: '+1';
