@@ -254,7 +254,14 @@ function render() {
       }
     }
   } else if (r.state === 'voting') {
-    if (votesStatus && votesStatus[my.id]) {
+    const isPart = participants.includes(my.id);
+    if (!isPart) {
+      // Spectators: show only lead playback (re-use replicate panel with recording UI hidden)
+      show('#panel-replicate');
+      const note = document.getElementById('spectator-note');
+      const yourGroup = document.getElementById('your-rec-group');
+      if (note && yourGroup) { note.classList.remove('hidden'); yourGroup.classList.add('hidden'); }
+    } else if (votesStatus && votesStatus[my.id]) {
       show('#panel-wait-voting');
     } else {
       show('#panel-vote');
@@ -277,7 +284,8 @@ function render() {
       if (skipBtn) skipBtn.disabled = true;
       if (voteWait) voteWait.classList.add('hidden');
       if (specNote) specNote.classList.remove('hidden');
-      setupVoting(r, { readonly: true });
+      const container = $('#vote-list'); if (container) container.innerHTML = '';
+      // Lead clip controls remain available on replicate panel
     } else if (votesStatus && votesStatus[my.id]) {
       // Already voted: show waiting screen; ensure controls are disabled
       if (voteBtn) voteBtn.disabled = true;

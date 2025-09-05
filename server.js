@@ -78,7 +78,11 @@ class Game {
         votesStatus: Object.fromEntries(r.participant_ids.map(pid => [pid, !!r.votes[pid]])),
       };
       const canSeeVotesEarly = (r.state === 'replicate') && (requester === r.lead_player_id || !!r.replicates[requester]);
-      if (requester && (r.state === 'voting' || r.state === 'scoreboard' || canSeeVotesEarly)) {
+      const isParticipant = requester && r.participant_ids.includes(requester);
+      const canShowClips = (r.state === 'voting') ? !!isParticipant
+                          : (r.state === 'scoreboard') ? true
+                          : canSeeVotesEarly;
+      if (requester && canShowClips) {
         const items = Object.entries(r.replicates); // include everyone's clip for visibility
         const seed = `${this.code}:${r.index}:${requester}`;
         const rng = mulberry32(hashStr(seed));
