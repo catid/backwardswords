@@ -55,6 +55,10 @@ Backwards Words — Minimal README (for AI agents)
   - View status: `systemctl status backwardswords --no-pager`
   - Tail logs: `journalctl -u backwardswords -f`
 
+**Restart Script**
+- Top-level helper that prefers systemd and falls back to background npm:
+  - `./restart-server.sh`
+
 **Git Hygiene**
 - `.gitignore` excludes: `data/`, `cert/`, `*.pem`, `*.key`, logs, node_modules.
 
