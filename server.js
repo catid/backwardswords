@@ -211,11 +211,12 @@ async function reverseWav(inputPath, outputPath) {
   if (pathname === '/join' && req.method === 'POST') {
     const body = await parseJSON(req);
     const code = String(body.code || '').toUpperCase();
-    const name = String(body.name || '').trim();
+    const name = String(body.name || '').trim().toUpperCase();
     const avatar = String(body.avatar || '').trim().slice(0, 4); // emoji or short token
     const game = getGame(code);
     let pid = null;
-    for (const p of Object.values(game.players)) if (p.name === name) { pid = p.id; break; }
+    // Ensure case-insensitive reuse by comparing uppercase
+    for (const p of Object.values(game.players)) if ((p.name || '').toUpperCase() === name) { pid = p.id; break; }
     if (!pid) { pid = uuid(); game.players[pid] = new Player(pid, name, avatar || null); game.scores[pid] = game.scores[pid] || 0; }
     if (!game.current_round && Object.keys(game.players).length >= 2) {
       const ids = Object.keys(game.players);
@@ -410,9 +411,22 @@ async function ensureCert() {
     try {
       const key = await fsp.readFile(process.env.SSL_KEY_FILE);
       const cert = await fsp.readFile(process.env.SSL_CERT_FILE);
-      return { key, cert, source: 'files' };
+      // Optional chain file for certain providers
+      let ca;
+      if (process.env.SSL_CA_FILE) {
+        try { ca = await fsp.readFile(process.env.SSL_CA_FILE); } catch {}
+      }
+      return ca ? { key, cert, ca, source: 'files+ca' } : { key, cert, source: 'files' };
     } catch (e) { /* fallthrough */ }
   }
+
+  // Prefer domain-specific certs at repo root if present
+  try {
+    const keyPath = path.join(__dirname, 'backwardswords.com.key');
+    const certPath = path.join(__dirname, 'backwardswords.com.pem');
+    const [key, cert] = await Promise.all([fsp.readFile(keyPath), fsp.readFile(certPath)]);
+    return { key, cert, source: 'backwardswords.com.*' };
+  } catch {}
 
   // Use certs in local cert folder if present
   const certDir = path.join(__dirname, 'cert');
@@ -474,7 +488,9 @@ async function ensureCert() {
   }
 
   // HTTPS server for app
-  const httpsServer = https.createServer({ key: creds.key, cert: creds.cert }, route);
+  const httpsOptions = { key: creds.key, cert: creds.cert };
+  if (creds.ca) httpsOptions.ca = creds.ca;
+  const httpsServer = https.createServer(httpsOptions, route);
   httpsServer.on('error', (err) => {
     console.error('HTTPS server error:', err && err.message ? err.message : err);
   });

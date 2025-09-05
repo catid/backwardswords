@@ -3,7 +3,13 @@ body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; backgro
 .hidden { display: none; }
 .topbar { display: flex; gap: 20px; align-items: center; padding: 10px 0; border-bottom: 1px solid #333; }
 .players ul { list-style: none; padding: 0; }
-.players li { padding: 4px 0; }
+.players li { padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+.player-name { font-weight: 600; text-transform: uppercase; }
+#player-name { text-transform: uppercase; }
+#game-code { text-transform: uppercase; }
+.status { color: #8aa; font-size: 12px; margin-left: 6px; }
+.top-crown { margin-left: 4px; filter: drop-shadow(0 1px 0 rgba(0,0,0,0.35)); }
+.score-chip { margin-left: auto; background: #1a2233; border: 1px solid #29354a; border-radius: 999px; padding: 2px 8px; font-weight: 800; color: #b7c7ff; font-size: 12px; }
 .panel { margin-top: 20px; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #11161f; }
 /* Buttons: fun, gamey, animated */
 button { position: relative; --h: 44px; min-height: var(--h); line-height: calc(var(--h) - 6px); padding: 0 16px; border: 0; border-radius: 10px; color: #fff; cursor: pointer; margin: 6px; font-weight: 700; letter-spacing: 0.2px; text-shadow: 0 1px 0 rgba(0,0,0,0.25);
@@ -89,7 +95,7 @@ audio { display: block; margin: 8px 0; }
 /* Avatars inline */
 .avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(180deg, #0f1624, #0c1320); border: 1px solid #233148; margin-right: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 16px; }
 .avatar-lg { width: 44px; height: 44px; font-size: 28px; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
-.avatar-podium { position: absolute; top: -36px; left: 50%; transform: translateX(-50%); }
+.avatar-podium { position: absolute; top: -44px; left: 50%; transform: translateX(-50%); z-index: 2; }
 .recorder .audio-row { flex: 0 0 100%; min-height: 96px; margin: 8px 0 12px; }
 
 /* Mobile Safari: avoid transforming native controls to keep taps reliable */
@@ -122,11 +128,12 @@ input, select { font-size: 16px; }
 .podium { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: end; justify-items: center; margin: 16px 0 8px; position: relative; }
 .podium::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 4px; background: linear-gradient(90deg, #243046, #2f3d57); border-radius: 2px; opacity: 0.8; }
 .podium .slot { width: 100%; max-width: 280px; text-align: center; }
-.podium .pillar { margin: 0 auto; width: 75%; min-width: 140px; border-radius: 10px 10px 4px 4px; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.25), 0 10px 22px rgba(0,0,0,0.28); position: relative; overflow: hidden; }
+.podium .pillar { margin: 0 auto; width: 75%; min-width: 140px; border-radius: 10px 10px 4px 4px; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.25), 0 10px 22px rgba(0,0,0,0.28); position: relative; overflow: visible; }
 .podium .pillar.gold { background: linear-gradient(180deg, #ffdf6e, #e7b80c); }
 .podium .pillar.silver { background: linear-gradient(180deg, #dfe6ef, #a9b3c1); }
-.podium .medal { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 32px; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.25)); }
+.podium .medal { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 32px; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.25)); z-index: 1; }
 .podium .plaque { margin-top: 10px; font-weight: 800; letter-spacing: 0.3px; }
+.podium .plaque { text-transform: uppercase; }
 .podium .score { font-size: 14px; opacity: 0.9; }
 
 .scores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }

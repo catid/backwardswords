@@ -4,8 +4,8 @@
   "private": true,
   "description": "Backwards Replication Party Game - mobile friendly web app",
   "scripts": {
-    "start": "node server.js",
-    "start:https": "HTTPS_PORT=8443 PORT=8000 node server.js"
+    "start": "HTTPS_PORT=8443 PORT=8000 SSL_CERT_FILE=backwardswords.com.pem SSL_KEY_FILE=backwardswords.com.key node server.js",
+    "start:443": "PORT=80 HTTPS_PORT=443 SSL_CERT_FILE=backwardswords.com.pem SSL_KEY_FILE=backwardswords.com.key node server.js"
   },
   "engines": {
     "node": ">=18"

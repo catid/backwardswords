@@ -32,6 +32,7 @@ Thumbs.db
 data/
 cert/
 *.pem
+*.key
 
 # Logs
 *.log

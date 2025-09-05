@@ -91,27 +91,43 @@ async function initSSE() {
 function render() {
   if (!state) return;
   $('#game-code').textContent = state.code;
-  $('#player-name').textContent = my.name;
+  $('#player-name').textContent = (my.name || '').toUpperCase();
   const meFromState = state.players.find(p => p.id === my.id);
   const myAv = meFromState?.avatar || my.avatar || '🙂';
   const fav = document.getElementById('player-avatar'); if (fav) fav.textContent = myAv;
 
-  // players list and statuses
+  // players list with scores + crown for top player(s)
   const ul = $('#players-list');
   ul.innerHTML = '';
   const r = state.currentRound;
   const replicateStatus = r?.replicateStatus || {};
   const votesStatus = r?.votesStatus || {};
+  const scores = state.scores || {};
+  let topScore = -Infinity; let hasAnyScore = false;
+  for (const v of Object.values(scores)) { if (typeof v === 'number') { hasAnyScore = true; if (v > topScore) topScore = v; } }
+  const topSet = new Set();
+  if (hasAnyScore && isFinite(topScore) && topScore > 0) {
+    for (const [pid, sc] of Object.entries(scores)) if (sc === topScore) topSet.add(pid);
+  }
   for (const p of state.players) {
-    const li = el('li');
+    const li = el('li', { class: 'player-row' });
     const av = el('span', { class: 'avatar' }, p.avatar || '🙂');
-    const nameSpan = el('span', {}, ` ${p.name} ${p.connected ? '🟢' : '⚫'}`);
+    const nameSpan = el('span', { class: 'player-name' }, (p.name || '').toUpperCase());
     li.appendChild(av);
     li.appendChild(nameSpan);
+    // Crown for top scorer(s)
+    if (topSet.has(p.id)) li.appendChild(el('span', { class: 'top-crown', title: 'Top score' }, '👑'));
+    // Connection + phase status
+    const sts = [];
+    sts.push(p.connected ? '🟢' : '⚫');
     if (r) {
-      if (r.state === 'replicate') li.textContent += replicateStatus[p.id] ? ' • submitted' : ' • working';
-      if (r.state === 'voting') li.textContent += votesStatus[p.id] ? ' • voted' : ' • voting';
+      if (r.state === 'replicate') sts.push(replicateStatus[p.id] ? 'submitted' : 'working');
+      if (r.state === 'voting') sts.push(votesStatus[p.id] ? 'voted' : 'voting');
     }
+    li.appendChild(el('span', { class: 'status' }, '• ' + sts.join(' • ')));
+    // Score chip
+    const sc = (typeof scores[p.id] === 'number') ? scores[p.id] : 0;
+    li.appendChild(el('span', { class: 'score-chip', title: 'Score' }, `${sc} pts`));
     ul.appendChild(li);
   }
 
@@ -187,7 +203,7 @@ function render() {
     if (top1) {
       const tieFirst = top2 && top2.score === top1.score;
       const mkSlot = (rank, entry) => {
-        const name = pmapName[entry.pid] || 'Unknown';
+        const name = (pmapName[entry.pid] || 'Unknown').toUpperCase();
         const avatar = pmapAvatar[entry.pid];
         const slot = el('div', { class: 'slot' });
         const pillar = el('div', { class: 'pillar ' + (rank === 1 ? 'gold' : 'silver') });
@@ -210,22 +226,8 @@ function render() {
       }
     }
 
-    // Build stylized score list with proper ranking (ties share rank number)
-    const grid = $('#scores-grid'); grid.innerHTML = '';
-    let rank = 0; let prev = null; let shown = 0;
-    for (const e of entries) {
-      if (prev === null || e.score < prev) { rank = shown + 1; prev = e.score; }
-      shown++;
-      const name = pmapName[e.pid] || 'Unknown';
-      const avatar = pmapAvatar[e.pid];
-      const card = el('div', { class: 'score-card' });
-      const rankEl = el('div', { class: 'score-rank ' + (rank === 1 ? 'rank-gold' : rank === 2 ? 'rank-silver' : rank === 3 ? 'rank-bronze' : '') }, String(rank));
-      card.appendChild(rankEl);
-      card.appendChild(el('span', { class: 'avatar' }, avatar));
-      card.appendChild(el('div', { class: 'score-name' }, name));
-      card.appendChild(el('div', { class: 'score-points' }, `${e.score} pts`));
-      grid.appendChild(card);
-    }
+    // Remove final score list; player list above already shows scores
+    const grid = $('#scores-grid'); if (grid) { grid.innerHTML = ''; grid.classList.add('hidden'); }
     startCelebration();
   }
   // Ensure audio rows reserve enough space after panel changes
@@ -328,7 +330,7 @@ $('#join-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const fd = new FormData(ev.target);
   const code = fd.get('code').toString().trim().toUpperCase();
-  const name = fd.get('name').toString().trim();
+  const name = fd.get('name').toString().trim().toUpperCase();
   const avatar = fd.get('avatar') ? String(fd.get('avatar')) : '';
   const resp = await fetch('/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, name, avatar }) });
   const data = await resp.json();
