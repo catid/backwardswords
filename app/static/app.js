@@ -88,45 +88,21 @@ function getJoinInputCode() {
 function buildInviteLink(codeOverride) {
   const code = (codeOverride || getJoinInputCode() || state?.code || my.code || '').toUpperCase();
   const origin = location.origin;
-  const url = `${origin}/?code=${encodeURIComponent(code)}`;
+  const url = `${origin}/?pass=${encodeURIComponent(code)}`;
   return { code, url };
 }
 
-function setShareTargets(prefix, codeOverride) {
+function updateInviteInput(prefix, codeOverride) {
+  const input = document.getElementById(`invite-url-${prefix}`);
+  if (!input) return;
   const { code, url } = buildInviteLink(codeOverride);
-  const headline = `Join my Backwards Words party: ${code}`;
-  const text = `${headline}\nOpen: ${url}`;
-
-  const shareBtn = document.getElementById(`share-${prefix}-btn`);
-  if (shareBtn) {
-    shareBtn.disabled = !code;
-    shareBtn.onclick = async () => {
-      if (!code) return;
-      try {
-        if (navigator.share) { await navigator.share({ title: 'Backwards Words', text: headline, url }); uiSuccess(); }
-        else { await navigator.clipboard.writeText(url); alert('Invite link copied to clipboard'); uiSuccess(); }
-      } catch {}
-    };
-  }
-  const sms = document.getElementById(`share-${prefix}-sms`);
-  if (sms) {
-    if (code) { sms.href = `sms:?&body=${encodeURIComponent(text)}`; sms.classList.remove('link-disabled'); sms.removeAttribute('aria-disabled'); sms.removeAttribute('tabindex'); }
-    else { sms.href = '#'; sms.classList.add('link-disabled'); sms.setAttribute('aria-disabled', 'true'); sms.setAttribute('tabindex', '-1'); }
-  }
-  const wa = document.getElementById(`share-${prefix}-wa`);
-  if (wa) {
-    if (code) { wa.href = `https://wa.me/?text=${encodeURIComponent(text)}`; wa.classList.remove('link-disabled'); wa.removeAttribute('aria-disabled'); wa.removeAttribute('tabindex'); }
-    else { wa.href = '#'; wa.classList.add('link-disabled'); wa.setAttribute('aria-disabled', 'true'); wa.setAttribute('tabindex', '-1'); }
-  }
-  const copy = document.getElementById(`invite-link-${prefix}`);
-  if (copy) {
-    copy.textContent = code ? url : 'Enter a code to generate an invite link';
-    copy.onclick = async () => {
-      if (!code) return;
-      try { await navigator.clipboard.writeText(url); uiSuccess(); copy.classList.add('copied'); } catch {}
-    };
-    copy.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy.click(); } };
-  }
+  input.value = code ? url : '';
+  input.placeholder = code ? '' : 'Enter a code to generate an invite link';
+  input.onclick = async () => {
+    const latest = buildInviteLink(codeOverride || getJoinInputCode());
+    input.value = latest.url;
+    try { input.focus(); input.select(); await navigator.clipboard.writeText(latest.url); uiSuccess(); } catch {}
+  };
 }
 
 async function initSSE() {
@@ -195,9 +171,9 @@ function render() {
   const isLead = r.leadPlayerId === my.id;
   if (r.state === 'lead_record') {
     if (isLead) show('#panel-lead'); else show('#panel-wait-lead');
-    // Update share targets for both lead/waiting views
-    setShareTargets('lead');
-    setShareTargets('wait');
+    // Update invite URL inputs for both lead/waiting views
+    updateInviteInput('lead');
+    updateInviteInput('wait');
   } else if (r.state === 'replicate') {
     // If I've already submitted, move me to the voting screen (waiting state); otherwise keep me on replicate.
     if (r.replicateStatus && r.replicateStatus[my.id]) {
@@ -401,18 +377,19 @@ $('#join-form').addEventListener('submit', async (ev) => {
 (function prefillFromURL() {
   try {
     const u = new URL(location.href);
-    const code = u.searchParams.get('code');
-    if (code) {
+    // Prefer pass=..., fallback to code=...
+    const pass = u.searchParams.get('pass') || u.searchParams.get('code');
+    if (pass) {
       const inp = document.querySelector('input[name="code"]');
-      if (inp) inp.value = String(code).toUpperCase();
+      if (inp) inp.value = String(pass).toUpperCase();
     }
   } catch {}
-  // Initialize join-screen share targets with current input
-  setShareTargets('join');
+  // Initialize join-screen invite URL with current input
+  updateInviteInput('join');
   const inp = document.querySelector('input[name="code"]');
   if (inp) inp.addEventListener('input', () => {
     const up = getJoinInputCode();
-    setShareTargets('join', up);
+    updateInviteInput('join', up);
   });
 })();
 
