@@ -281,10 +281,14 @@ async function reverseWav(inputPath, outputPath) {
     if (!game.players[pid]) { res.statusCode = 400; return res.end('Unknown player'); }
     if (game.current_round) { res.statusCode = 409; return res.end('Round already started'); }
     game.lobby_ready[pid] = ready;
-    // Auto-start when at least 2 CONNECTED players are ready, regardless of others
-    const readyConnected = Object.keys(game.lobby_ready).filter(id => game.lobby_ready[id] && game.players[id] && game.players[id].connected);
-    if (!game.current_round && readyConnected.length >= 2) {
-      const participants = readyConnected.slice();
+    // Start when ALL present players are ready (present = connected OR toggled-ready), with at least 2 present
+    const connectedIds = Object.keys(game.players).filter(id => game.players[id].connected);
+    const presentSet = new Set([...connectedIds, ...Object.keys(game.lobby_ready)]);
+    const presentIds = Array.from(presentSet).filter(id => game.players[id]);
+    const enough = presentIds.length >= 2;
+    const allReady = enough && presentIds.every(id => !!game.lobby_ready[id]);
+    if (!game.current_round && allReady) {
+      const participants = presentIds.slice();
       const lead = participants[Math.floor(now()) % participants.length];
       game.current_round = new RoundState(1, lead, participants);
       game.lobby_ready = {}; // clear lobby ready once game starts
