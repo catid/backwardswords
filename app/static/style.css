@@ -29,6 +29,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.2); box
 .btn-submit { background: linear-gradient(135deg, #f1c40f, #ffdd55); color: #222; text-shadow: none; box-shadow: 0 6px 0 #b6950b, 0 12px 18px rgba(0,0,0,0.25); }
 .btn-skip { background: linear-gradient(135deg, #5f6a7a, #8190a7); box-shadow: 0 6px 0 #47505e, 0 12px 18px rgba(0,0,0,0.25); }
 .btn-ghost { background: linear-gradient(135deg, #2b3242, #3a4255); box-shadow: 0 6px 0 #1b2030, 0 12px 18px rgba(0,0,0,0.25); }
+/* Ready toggle */
+.btn-ready { background: linear-gradient(135deg, #3a455a, #55617a); box-shadow: 0 6px 0 #2b3446, 0 12px 18px rgba(0,0,0,0.25); font-weight: 900; letter-spacing: 0.4px; }
+.btn-ready.ready-active { color: #222; text-shadow: none; background: linear-gradient(135deg, #f1c40f, #ffd34d); box-shadow: 0 6px 0 #b7950f, 0 12px 18px rgba(0,0,0,0.25); animation: pulse-ready 900ms ease-in-out 1, shine 2.2s linear infinite; }
+@keyframes pulse-ready { 0%{ transform: scale(0.98);} 40%{ transform: scale(1.04);} 100%{ transform: scale(1);} }
+@keyframes shine { 0%{ filter: brightness(1);} 50%{ filter: brightness(1.1);} 100%{ filter: brightness(1);} }
 
 /* Ripple effect */
 .ripple { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
@@ -104,6 +109,7 @@ audio { display: block; margin: 8px 0; }
 /* Avatars inline */
 .avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(180deg, #0f1624, #0c1320); border: 1px solid #233148; margin-right: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 16px; }
 .avatar-lg { width: 44px; height: 44px; font-size: 28px; box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+.avatar-ghost { background: linear-gradient(180deg, #121a26, #0e1622); border-color: #2a3342; filter: grayscale(0.25) brightness(1.05); }
 .avatar-podium { position: absolute; top: -44px; left: 50%; transform: translateX(-50%); z-index: 2; }
 .recorder .audio-row { flex: 0 0 100%; min-height: 96px; margin: 8px 0 12px; }
 

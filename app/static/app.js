@@ -144,6 +144,7 @@ function render() {
   const votesStatus = r?.votesStatus || {};
   const participants = r?.participantIds || [];
   const scores = state.scores || {};
+  const lobbyReady = state.lobbyReadyStatus || {};
   let topScore = -Infinity; let hasAnyScore = false;
   for (const v of Object.values(scores)) { if (typeof v === 'number') { hasAnyScore = true; if (v > topScore) topScore = v; } }
   const topSet = new Set();
@@ -152,8 +153,9 @@ function render() {
   }
   for (const p of state.players) {
     const li = el('li', { class: 'player-row' });
-    const av = el('span', { class: 'avatar' }, p.avatar || '🙂');
-    const nameSpan = el('span', { class: 'player-name' }, (p.name || '').toUpperCase());
+    const isPart = r ? participants.includes(p.id) : true;
+    const av = el('span', { class: 'avatar' + (!isPart && r ? ' avatar-ghost' : '') }, (!isPart && r) ? '👻' : (p.avatar || '🙂'));
+    const nameSpan = el('span', { class: 'player-name' }, (p.name || '').toUpperCase() + (!isPart && r ? ' (spectator)' : ''));
     li.appendChild(av);
     li.appendChild(nameSpan);
     // Crown for top scorer(s)
@@ -169,6 +171,10 @@ function render() {
       if (r.state === 'voting') {
         if (isPart) sts.push(votesStatus[p.id] ? 'voted' : 'voting'); else sts.push('spectating');
       }
+    } else {
+      // Lobby: show ready status
+      const isReady = !!lobbyReady[p.id];
+      sts.push(isReady ? 'ready' : 'not ready');
     }
     li.appendChild(el('span', { class: 'status' }, '• ' + sts.join(' • ')));
     // Score chip
@@ -182,6 +188,25 @@ function render() {
     $('#phase').textContent = 'Lobby';
     show('#panel-lobby');
     updateInviteInput('lobby');
+    // Setup Ready button state and handler
+    const myReady = !!lobbyReady[my.id];
+    const btn = document.getElementById('toggle-ready');
+    const hint = document.getElementById('ready-hint');
+    if (btn) {
+      btn.classList.toggle('ready-active', myReady);
+      btn.setAttribute('aria-pressed', String(myReady));
+      btn.textContent = myReady ? 'Ready' : 'Ready';
+      btn.onclick = async () => {
+        const newState = !myReady;
+        btn.disabled = true;
+        try {
+          await fetch('/lobby/ready', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: my.code, playerId: my.id, ready: newState }) });
+          if (newState) uiSuccess(); else uiClick();
+        } catch {}
+        finally { btn.disabled = false; }
+      };
+      if (hint) hint.textContent = 'Click to toggle. Turns gold when you’re ready.';
+    }
     adjustAudioRows();
     return;
   }

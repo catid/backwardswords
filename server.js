@@ -36,7 +36,15 @@ class RoundState {
 }
 
 class Game {
-  constructor(code) { this.code = code; this.players = {}; this.scores = {}; this.rounds = []; this.current_round = null; this.sseClients = new Map(); }
+  constructor(code) {
+    this.code = code;
+    this.players = {};
+    this.scores = {};
+    this.rounds = [];
+    this.current_round = null;
+    this.sseClients = new Map();
+    this.lobby_ready = {}; // pid -> bool (only used when current_round is null)
+  }
   dir() { const d = path.join(DATA_DIR, this.code); fs.mkdirSync(d, { recursive: true }); return d; }
   clipUrl(p) {
     if (!p) return null;
@@ -48,6 +56,7 @@ class Game {
   toPublic(requester) {
     const players = Object.values(this.players).map(p => ({ id: p.id, name: p.name, avatar: p.avatar || null, connected: p.connected }));
     let cur = null;
+    const lobbyReadyStatus = this.current_round ? null : Object.fromEntries(Object.keys(this.players).map(pid => [pid, !!this.lobby_ready[pid]]));
     if (this.current_round) {
       const r = this.current_round;
       cur = {
@@ -75,7 +84,13 @@ class Game {
         }));
       }
     }
-    return { code: this.code, players, currentRound: cur, scores: this.scores };
+    return {
+      code: this.code,
+      players,
+      currentRound: cur,
+      scores: this.scores,
+      lobbyReadyStatus,
+    };
   }
 }
 
@@ -220,11 +235,7 @@ async function reverseWav(inputPath, outputPath) {
     // Ensure case-insensitive reuse by comparing uppercase
     for (const p of Object.values(game.players)) if ((p.name || '').toUpperCase() === name) { pid = p.id; break; }
     if (!pid) { pid = uuid(); game.players[pid] = new Player(pid, name, avatar || null); game.scores[pid] = game.scores[pid] || 0; }
-    if (!game.current_round && Object.keys(game.players).length >= 2) {
-      const ids = Object.keys(game.players);
-      const lead = ids[Math.floor(now()) % ids.length];
-      game.current_round = new RoundState(1, lead, ids);
-    }
+    if (!game.current_round) game.lobby_ready[pid] = false; // default not ready
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ code: game.code, playerId: pid, state: game.toPublic(pid) }));
     sendState(game);
@@ -238,6 +249,8 @@ async function reverseWav(inputPath, outputPath) {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
     game.sseClients.set(res, playerId);
     if (game.players[playerId]) game.players[playerId].connected = true;
+    // Default lobby not-ready for newly connected players when in lobby
+    if (!game.current_round && playerId) game.lobby_ready[playerId] = !!game.lobby_ready[playerId];
     const payload = JSON.stringify({ type: 'state', state: game.toPublic(playerId) });
     res.write(`data: ${payload}\n\n`);
     req.on('close', () => {
@@ -245,6 +258,32 @@ async function reverseWav(inputPath, outputPath) {
       if (game.players[playerId]) game.players[playerId].connected = false;
       sendState(game);
     });
+    return;
+  }
+
+  if (pathname === '/lobby/ready' && req.method === 'POST') {
+    const body = await parseJSON(req);
+    const code = String(body.code || '').toUpperCase();
+    const pid = String(body.playerId || '');
+    const ready = !!body.ready;
+    const game = getGame(code);
+    if (!game.players[pid]) { res.statusCode = 400; return res.end('Unknown player'); }
+    if (game.current_round) { res.statusCode = 409; return res.end('Round already started'); }
+    game.lobby_ready[pid] = ready;
+    // Auto-start if all connected players ready and at least 2
+    const connectedIds = Object.keys(game.players).filter(id => game.players[id].connected);
+    const enough = connectedIds.length >= 2;
+    const allReady = enough && connectedIds.every(id => !!game.lobby_ready[id]);
+    if (allReady) {
+      const participants = connectedIds.slice();
+      const lead = participants[Math.floor(now()) % participants.length];
+      game.current_round = new RoundState(1, lead, participants);
+      // Reset lobby state
+      game.lobby_ready = {};
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ ok: true, started: !!game.current_round }));
+    sendState(game);
     return;
   }
 
