@@ -11,7 +11,7 @@
     <div id="join-screen" class="screen">
       <h1>Backwards Words</h1>
       <form id="join-form">
-        <label>Game Code <input name="code" placeholder="e.g., PARTY" required style="text-transform: uppercase" /></label>
+        <label>Party Password <input name="code" placeholder="e.g., PARTY" required style="text-transform: uppercase" /></label>
         <label>Your Name <input name="name" placeholder="e.g., ALEX" required style="text-transform: uppercase" /></label>
         <div class="avatar-picker">
           <label>Select Your Avatar</label>
@@ -28,11 +28,11 @@
         </div>
         <button type="submit">Join</button>
       </form>
-      <p class="hint">Share the game code with everyone.</p>
+      <p class="hint">Share your party link with everyone.</p>
       <div class="group" id="invite-group-join">
         <h3>Invite Friends</h3>
         <div class="copy-row">
-          <div class="copy-hint">Tap to copy invite URL</div>
+          <div class="copy-hint">Tap to copy invite link</div>
           <input id="invite-url-join" class="invite-input" type="text" readonly />
         </div>
       </div>
@@ -40,8 +40,8 @@
 
     <div id="game-screen" class="screen hidden">
       <div class="topbar">
-        <div>Game: <span id="game-code"></span></div>
-        <div>Player: <span id="player-avatar" class="avatar"></span> <span id="player-name"></span></div>
+        <div>Party: <span id="game-code"></span></div>
+        <div>You: <span id="player-avatar" class="avatar"></span> <span id="player-name"></span></div>
         <div>Phase: <span id="phase"></span></div>
       </div>
 
@@ -51,7 +51,7 @@
       </div>
 
       <div id="panel-lead" class="panel hidden">
-        <h2>You are the lead. Record a clip (max 5 seconds).</h2>
+        <h2>You're the Lead — record up to 5s.</h2>
         <div class="recorder">
           <button id="lead-rec-btn" class="btn-record">Start Recording</button>
           <button id="lead-stop-btn" class="btn-stop" disabled>Stop</button>
@@ -62,43 +62,43 @@
           </div>
           <button id="lead-upload-btn" class="btn-submit" disabled>Submit Clip</button>
         </div>
-        <p>Everyone will try to replicate your clip played backwards.</p>
+        <p>Everyone will try to replicate your clip (backwards).</p>
         <div class="group" id="invite-group-lead">
           <h3>Invite Friends</h3>
           <div class="copy-row">
-            <div class="copy-hint">Tap to copy invite URL</div>
+            <div class="copy-hint">Tap to copy invite link</div>
             <input id="invite-url-lead" class="invite-input" type="text" readonly />
           </div>
         </div>
       </div>
 
       <div id="panel-wait-lead" class="panel hidden">
-        <h2>Waiting for the lead to submit the clip...</h2>
+        <h2>Waiting for the Lead…</h2>
         <div class="lead-controls">
           <p>Once the clip is ready, you'll be able to play it forward and backwards.</p>
         </div>
         <div class="group" id="invite-group-wait">
           <h3>Invite Friends</h3>
           <div class="copy-row">
-            <div class="copy-hint">Tap to copy invite URL</div>
+            <div class="copy-hint">Tap to copy invite link</div>
             <input id="invite-url-wait" class="invite-input" type="text" readonly />
           </div>
         </div>
       </div>
 
       <div id="panel-replicate" class="panel hidden">
-        <h2>Replicate the backwards clip</h2>
+        <h2>Replicate the clip (backwards)</h2>
         <div class="group" id="lead-clip-group">
-          <h3>Leader’s Clip</h3>
+          <h3>Lead Clip</h3>
           <div class="clip-controls">
             <button id="play-forward" class="btn-forward">Play Forward</button>
-            <button id="play-backward" class="btn-reverse">Play Backward</button>
+            <button id="play-backward" class="btn-reverse">Play Backwards</button>
           </div>
           <div class="audio-row">
             <audio id="lead-clip-player" class="audio-large" controls playsinline preload="metadata"></audio>
           </div>
         </div>
-        <p id="spectator-note" class="hint hidden">You joined after this round started. You’re spectating this round and will join the next one automatically. You’ll still be able to vote.</p>
+        <p id="spectator-note" class="hint hidden">You joined after this round started. You're spectating and will join the next round automatically.</p>
         <div class="group" id="your-rec-group">
           <h3>Your Recording</h3>
           <div class="recorder">
@@ -116,15 +116,15 @@
       </div>
 
       <div id="panel-vote" class="panel hidden">
-        <h2>Crown the best</h2>
+        <h2>Crown the Best</h2>
         <p id="vote-waiting" class="hint hidden">Waiting for other players to finish submitting. Voting will open automatically.</p>
         <p id="vote-spectator-note" class="hint hidden">You’re spectating this round. You can listen but cannot vote.</p>
         <div id="vote-list"></div>
         <div class="votes">
           <button id="submit-votes" class="btn-submit">Submit Vote</button>
-          <button id="skip-vote" class="btn-skip" title="Skip voting and abstain">Skip Voting</button>
+          <button id="skip-vote" class="btn-skip" title="Skip your vote">Skip Vote</button>
         </div>
-        <p class="hint">Tap the crown on the best clip. You may abstain via Skip Voting.</p>
+        <p class="hint">Tap the crown for the best clip. You can skip your vote.</p>
       </div>
 
       <div id="panel-wait-voting" class="panel hidden">
@@ -145,16 +145,16 @@
   </html>
       <div id="panel-lobby" class="panel hidden">
         <h2>Lobby</h2>
-        <p>Everyone clicks Ready to begin. Share your party link:</p>
+        <p>Ready up to begin! Share your party link:</p>
         <div class="group">
           <h3>Invite Friends</h3>
           <div class="copy-row">
-            <div class="copy-hint">Tap to copy invite URL</div>
+            <div class="copy-hint">Tap to copy invite link</div>
             <input id="invite-url-lobby" class="invite-input" type="text" readonly />
           </div>
         </div>
         <div class="group">
-          <button id="toggle-ready" class="btn-ready" aria-pressed="false">Ready</button>
-          <div id="ready-hint" class="hint">Click to toggle. Turns gold when you’re ready.</div>
+          <button id="toggle-ready" class="btn-ready" aria-pressed="false">I'm Ready</button>
+          <div id="ready-hint" class="hint">Click to toggle. It glows gold when you’re ready.</div>
         </div>
       </div>

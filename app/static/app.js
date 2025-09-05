@@ -183,7 +183,7 @@ function render() {
     } else {
       // Lobby: show ready status
       const isReady = !!lobbyReady[p.id];
-      sts.push(isReady ? 'ready' : 'not ready');
+      sts.push(isReady ? 'Ready' : 'Not Ready');
     }
     li.appendChild(el('span', { class: 'status' }, '• ' + sts.join(' • ')));
     // Score chip or spectator marker
@@ -208,7 +208,7 @@ function render() {
     if (btn) {
       btn.classList.toggle('ready-active', myReady);
       btn.setAttribute('aria-pressed', String(myReady));
-      btn.textContent = myReady ? 'Ready' : 'Ready';
+      btn.textContent = "I'm Ready";
       btn.onclick = async () => {
         const newState = !myReady;
         btn.disabled = true;
@@ -228,8 +228,9 @@ function render() {
     lastRoundIndex = r.index;
     selectedCrown = null;
   }
-  // Friendly phase name: call the final screen "Podium"
-  $('#phase').textContent = (r.state === 'scoreboard') ? 'Podium' : r.state;
+  // Friendly phase name mapping
+  const phaseMap = { lead_record: 'Lead', replicate: 'Replicate', voting: 'Vote', scoreboard: 'Podium' };
+  $('#phase').textContent = phaseMap[r.state] || r.state;
 
   // Panels
   const isLead = r.leadPlayerId === my.id;
